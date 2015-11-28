@@ -98,7 +98,7 @@ angular.module('pouchapp', ['ui.router'])
 				changeListener.cancel();
 			},
 			sync: function(remoteDatabase) {
-				database.sync(remoteDatabase, {live: true, retry: true});
+				database.sync(remoteDatabase, {live: true, retry: true, cache: false});
 			},
 			save: function(jsonObj) {
 				var deferred = $q.defer();
