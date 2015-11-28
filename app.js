@@ -16,7 +16,7 @@ angular.module('pouchapp', ['ui.router'])
             cache: false
           })
           .state('item', {
-            url: '/:id',
+            url: '/:id/:rev',
             templateUrl: 'views/item.template.html',
             controller: 'MainController',
             cache: false
@@ -45,8 +45,7 @@ angular.module('pouchapp', ['ui.router'])
 
 		if($stateParams.id) {
 			pouchDbSrvc.get($stateParams.id).then(function(res) {
-				console.log(res);
-				$scope.inputForm = res.data;
+				$scope.inputForm = res;
 			}, function(err) {
 				console.log(err);
 			});
@@ -58,7 +57,7 @@ angular.module('pouchapp', ['ui.router'])
 				lastname: lastname,
 				email: email
 			};
-			if($stateParams.documentId) {
+			if($stateParams.id) {
 				jsonObj._id = $stateParams.id;
 				jsonObj._rev = $stateParams.rev;
 			}

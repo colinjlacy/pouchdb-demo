@@ -10,11 +10,11 @@
 	</tr>
 	</thead>
 	<tbody>
-	<tr ng-repeat="item in items track by $index">
-		<td>{{item.firstname}}</td>
-		<td>{{item.lastname}}</td>
-		<td>{{item.email}}</td>
-		<td><button class="btn btn-xs btn-primary" ui-sref="item({id: item.id})">edit</button> | <button class="btn btn-xs btn-default" ng-click="delete(item.id, $index)">delete</button></td>
+	<tr ng-repeat="(key, value) in items">
+		<td>{{value.firstname}}</td>
+		<td>{{value.lastname}}</td>
+		<td>{{value.email}}</td>
+		<td><button class="btn btn-xs btn-primary" ui-sref="item({id: key, rev: value._rev})">edit</button> | <button class="btn btn-xs btn-default" ng-click="delete(key, value._rev)">delete</button></td>
 	</tr>
 	</tbody>
 </table>
