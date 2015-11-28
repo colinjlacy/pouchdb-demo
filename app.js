@@ -11,13 +11,13 @@ angular.module('pouchapp', ['ui.router'])
       $stateProvider
           .state('list', {
             url: '/',
-            templateUrl: 'app/views/list.template.html',
+            templateUrl: 'views/list.template.html',
             controller: 'MainController',
             cache: false
           })
           .state('item', {
             url: '/:id',
-            templateUrl: 'app/views/item.template.html',
+            templateUrl: 'views/item.template.html',
             controller: 'MainController',
             cache: false
           });
@@ -32,13 +32,13 @@ angular.module('pouchapp', ['ui.router'])
 		pouchDbSrvc.startListening();
 
 		// add the rootScope listener for changes sent by the service
-		$rootScope.on('pouchDbSrvc:change', function(e, data) {
+		$rootScope.$on('pouchDbSrvc:change', function(e, data) {
 			$scope.items[data.doc._id] = data.doc;
 			$scope.apply();
 		});
 
 		// add the rootScope listener for delete calls sent by the service
-		$rootScope.on('pouchDbSrvc:delete', function(e, data) {
+		$rootScope.$on('pouchDbSrvc:delete', function(e, data) {
 			delete $scope.items[data.doc._id];
 			$scope.apply();
 		});
@@ -74,7 +74,7 @@ angular.module('pouchapp', ['ui.router'])
 		};
     })
 
-    .service('puchDbSrvc', function($rootScope, $q) {
+    .service('pouchDbSrvc', function($rootScope, $q) {
 
 		var database,
 			changeListener;
