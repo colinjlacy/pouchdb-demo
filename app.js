@@ -1,12 +1,28 @@
 'use strict';
 
-// Declare app level module which depends on views, and components
-angular.module('myApp', [
-  'ngRoute',
-  'myApp.view1',
-  'myApp.view2',
-  'myApp.version'
-]).
-config(['$routeProvider', function($routeProvider) {
-  $routeProvider.otherwise({redirectTo: '/view1'});
-}]);
+angular.module("pouchapp", ["ui.router"])
+
+    .run(function(pouchDbSrvc) {
+
+    })
+
+    .config(function($stateProvider, $urlRouterProvider) {
+      $stateProvider
+          .state('list', {
+            url: '/',
+            templateUrl: 'app/views/list.template.html',
+            controller: 'MainController',
+            cache: false
+          })
+          .state('item', {
+            url: '/:id',
+            templateUrl: 'app/views/item.template.html',
+            controller: 'MainController',
+            cache: false
+          });
+      $urlRouterProvider.otherwise('/');
+    })
+
+    .controller("MainController", function($scope, $rootScope, $state, $stateParams, pouchDbSrvc) {
+
+    });
