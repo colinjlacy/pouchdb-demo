@@ -67,7 +67,7 @@ angular.module('pouchapp', ['ui.router'])
 				console.log(err);
 			});
 		};
-		
+
 		$scope.delete = function(id, rev) {
 			pouchDbSrvc.delete(id, rev);
 		};
@@ -98,7 +98,9 @@ angular.module('pouchapp', ['ui.router'])
 				changeListener.cancel();
 			},
 			sync: function(remoteDatabase) {
-				database.sync(remoteDatabase, {live: true, retry: true, cache: false});
+				database.sync(remoteDatabase, {live: true, retry: true, cache: false}, function(err) {
+					console.log(err);
+				});
 			},
 			save: function(jsonObj) {
 				var deferred = $q.defer();
