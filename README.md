@@ -55,6 +55,7 @@ Running bower install will get all of the dependencies listed in the `index.html
 Open up the `app.js` file, and take a look at lines 6 and 7, in the `module.run()` method.  The first thing you'll see is that I'm setting a name for a local database.  That can truly be anything you want, so go nuts.  
  
 The second thing you'll see - so much more important, is the address for the Sync Gateway.  There are two things to note here:
+
 1. I have my Sync Gateway installed locally, so I'm running on localhost at the SG's default port, 4984.  Change this if you need to.
 2. I'm listing the `restful-sample` as the data bucket that'll be synced on Couchbase Server by listing it in the URL path.  Change that if you need to.
 
@@ -89,11 +90,13 @@ To start the Python server mentioned above at the default port, run the followin
 If you want to run a different server (e.g. Node), be sure to configure the port (and domain if applicable) appropriately in the CORS section of the Sync Gateway config.
 
 Before you test your application in your browser, make sure all of the following are true:
+
 1. You have your Couchbase Server running
 2. You've started the Sync Gateway
 3. All of the configurations are aligned between the client app, the Sync Gateway config, and the Couchbase Server URL and its data bucket
 
 Once your server is running, open your browser to [http://localhost:8000](http://localhost:8000).  Two things should happen:
+
 1. You should see a page with a `<thead>` with some column names, a lack of rows in the `<tbody>`, and a **New Item** button.  
 2. You should see some feedback in the Sync Gateway console reflecting the handling of REST calls.
 
