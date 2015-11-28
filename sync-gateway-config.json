@@ -6,7 +6,7 @@
     "Attach+"
   ],
   "databases": {
-    "test-database": {
+    "default": {
       "server": "walrus:data",
       "sync": "function (doc) {channel (doc.channels);}",
       "users": {

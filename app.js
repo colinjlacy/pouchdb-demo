@@ -4,7 +4,7 @@ angular.module('pouchapp', ['ui.router'])
 
     .run(function(pouchDbSrvc) {
 		pouchDbSrvc.setDatabase('colin-test');
-		pouchDbSrvc.sync('http://localhost:4984/test-database');
+		pouchDbSrvc.sync('http://localhost:4984/default');
     })
 
     .config(function($stateProvider, $urlRouterProvider) {
@@ -34,13 +34,13 @@ angular.module('pouchapp', ['ui.router'])
 		// add the rootScope listener for changes sent by the service
 		$rootScope.$on('pouchDbSrvc:change', function(e, data) {
 			$scope.items[data.doc._id] = data.doc;
-			$scope.apply();
+			$scope.$apply();
 		});
 
 		// add the rootScope listener for delete calls sent by the service
 		$rootScope.$on('pouchDbSrvc:delete', function(e, data) {
 			delete $scope.items[data.doc._id];
-			$scope.apply();
+			$scope.$apply();
 		});
 
 		if($stateParams.id) {
