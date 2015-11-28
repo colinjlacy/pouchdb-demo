@@ -1,297 +1,112 @@
-# angular-seed — the seed for AngularJS apps
+# PouchDB Demo
 
-This project is an application skeleton for a typical [AngularJS](http://angularjs.org/) web app.
-You can use it to quickly bootstrap your angular webapp projects and dev environment for these
-projects.
+This is a demo application based on the two tutorials by Nic Raboy for [creating a CEAN-stack application](https://blog.nraboy.com/2015/10/create-a-full-stack-app-using-node-js-couchbase-server/), and [using PouchDB to store and sync data locally](http://blog.couchbase.com/sync-with-couchbase-using-only-angularjs-and-pouchdb).  This project takes the extra step not covered either of those tutorials, which is to create a fully vertical sync between the client and a Couchbase Server instance, using PouchDB. This extends my [CEAN stack](https://github.com/colinjlacy/CEAN-stack-demo) application, which simply stores to the Couchbase Server db, but doesn't enable syncing.
 
-The seed contains a sample AngularJS application and is preconfigured to install the Angular
-framework and a bunch of development and testing tools for instant web development gratification.
+## Setup
 
-The seed app doesn't do much, just shows how to wire two controllers and views together.
+### Create an instance of Couchbase Server
 
+The bulk of setup comes in installing and configuring Couchbase Server.  
 
-## Getting Started
+First, follow the instructions on [the Couchbase website](http://www.couchbase.com/get-started-developing-nosql#Download_Couchbase_Server), which will guide you through downloading, installing, and configuring.  Once you've done that, launch the DB admin portal in the browser by navigating to [http://localhost:8091/](http://localhost:8091/). 
 
-To get you started you can simply clone the angular-seed repository and install the dependencies:
+Next, create a bucket called **restful-sample**.  If you'd like to call it something else, that's fine, just be sure to configure that field in the `/config.json` file. 
+ 
+#### Create an Index on the Bucket
 
-### Prerequisites
+After that you'll have to add an index.  There's probably an easier way to do this, but here's how I did it, as per the instructions in the tutorial.
 
-You need git to clone the angular-seed repository. You can get git from
-[http://git-scm.com/](http://git-scm.com/).
+Start up the **Couchbase Query Client** from the command line.  For me, one a Mac, this meant running the following:
+ 
+	$ /Applications/Couchbase\ Server.app/Contents/Resources/couchbase-core/bin/cbq
+	
+According to Nic Raboy, on a PC you would run:
 
-We also use a number of node.js tools to initialize and test angular-seed. You must have node.js and
-its package manager (npm) installed.  You can get them from [http://nodejs.org/](http://nodejs.org/).
+	C:/Program Files/Couchbase/Server/bin/cbq.exe
+	
+Keep in mind I haven't tested that Windows shell command.
 
-### Clone angular-seed
+Once your Couchbase console has started, run the following command to create an index:
 
-Clone the angular-seed repository using [git][git]:
+	CREATE PRIMARY INDEX ON `restful-sample` USING GSI;
 
-```
-git clone https://github.com/angular/angular-seed.git
-cd angular-seed
-```
+### Download the Sync Gateway
 
-If you just want to start a new project without the angular-seed commit history then you can do:
+Couchbase provides the **Couchbase Sync Gateway**, a shell process (which might be originally written in Go?) that handles syncing a local DB instance (in this case PouchDB) to a Couchbase Server instance.
 
-```bash
-git clone --depth=1 https://github.com/angular/angular-seed.git <your-project-name>
-```
+Again, I'm sure there's an easier way to do this, but this is how I got there.  To download, navigate your browser to the [Downloads page](http://www.couchbase.com/nosql-databases/downloads) on the Couchbase website.  Click on the **Couchbase Mobile** tab, and download whichever platform works for you.  Once its downloaded, unzip the package and place it somewhere on your machine where you'll have good access to it, and then open a command line in the Sync Gateway directory.  You'll be running the Sync Gateway using a shell script that comes built in.  You can test by running:
 
-The `depth=1` tells git to only pull down one commit worth of historical data.
+	$ ./sync_gateway
+	
+If it connects successfully, everything should be good.  Go ahead and shut it down with **Ctrl+C**.
 
-### Install Dependencies
+### Set up the application to run
 
-We have two kinds of dependencies in this project: tools and angular framework code.  The tools help
-us manage and test the application.
+Install all of the Bower dependencies listed in `bower.json`:
 
-* We get the tools we depend upon via `npm`, the [node package manager][npm].
-* We get the angular code via `bower`, a [client-side code package manager][bower].
+	$ bower install
+	
+**NOTE:** At the time that I put this application together, I was back and forth between PouchDB v4.0.3 and v5.0.0.  Each had some wonkiness, but the latest version at the time, v5.1.0, had a severe bug that was throwing endless 404 errors in the console and generally gumming up the pipes.  It's a problem that's been [logged as a known bug](https://github.com/pouchdb/pouchdb/issues/4602) in the PouchDB GitHub.
 
-We have preconfigured `npm` to automatically run `bower` so we can simply do:
+Running bower install will get all of the dependencies listed in the `index.html`, which will allow us to run our application.
 
-```
-npm install
-```
+### Sync the local DB to the Sync Gateway
 
-Behind the scenes this will also call `bower install`.  You should find that you have two new
-folders in your project.
+Open up the `app.js` file, and take a look at lines 6 and 7, in the `module.run()` method.  The first thing you'll see is that I'm setting a name for a local database.  That can truly be anything you want, so go nuts.  
+ 
+The second thing you'll see - so much more important, is the address for the Sync Gateway.  There are two things to note here:
+1. I have my Sync Gateway installed locally, so I'm running on localhost at the SG's default port, 4984.  Change this if you need to.
+2. I'm listing the `restful-sample` as the data bucket that'll be synced on Couchbase Server by listing it in the URL path.  Change that if you need to.
 
-* `node_modules` - contains the npm packages for the tools we need
-* `app/bower_components` - contains the angular framework files
+Next, open up the `sync-gateway-config.json` file.  There are a few things to look at here as well.
 
-*Note that the `bower_components` folder would normally be installed in the root folder but
-angular-seed changes this location through the `.bowerrc` file.  Putting it in the app folder makes
-it easier to serve the files by a webserver.*
+The `databases` property is an object that allows syncing with mulitple data buckets.  At this point I haven't explored syncing with views using PouchDB, but it's something worth looking at.  The only database listed here is the Couchbase Server DB - specifically the **restful-sample** data bucket.  Note that the name of the data bucket is the key to the DB object, and the server that it lives on is a property.  If you have your Couchbase Server instance running somewhere other than your local machine at the default port, you would change that there.  Similarly, if you chose a different name for your data bucket, you would change that here as well by changing the key in the `databases` object.
 
-### Run the Application
+I do believe that your data bucket name has to match the path in the `module.run()` and the name of the database in your config.  I haven't played around with misaligning those to see what happens.
 
-We have preconfigured the project with a simple development web server.  The simplest way to start
-this server is:
+Last (for this step mind you), take a look at the `CORS` property.  I've set the allowed origin to match the default port of the local Python SimpleHTTPServer, which I used to serve up the front-end application.  I'll go more into that in the last section on running the application.
 
-```
-npm start
-```
+### Run the Sync Gateway
 
-Now browse to the app at `http://localhost:8000/app/index.html`.
+The config you just looked at might be part of this project, but it actually feeds the Sync Gateway - which might not even live on the same machine as your project.  This is where things look like they could get disjointed in a real world application and best-practices are certainly worth exploring.
 
+From the command line that you should still have open in the Sync Gateway directory, run the shell script that starts the Sync Gateway, and pass in the config file as an argument:
+ 
+    $ ./sync_gateway path/to/sync-gateway-config.json
+    
+Yeah, I have doubts about that.  If that lives on the Sync Gateway server, it can easily fall out of line with the application configuration.  
 
+I haven't tried yet, but it might be possible to run a script that calls an HTTP request to an open file server that will return the config to the Sync Gateway.  
 
-## Directory Layout
+It should be noted that you can also run this command using command line options to configure the Sync Gateway.  However I didn't see any way to pass in CORS properties; so neither way struck me as the right way to do it.
 
-```
-app/                    --> all of the source files for the application
-  app.css               --> default stylesheet
-  components/           --> all app specific modules
-    version/              --> version related components
-      version.js                 --> version module declaration and basic "version" value service
-      version_test.js            --> "version" value service tests
-      version-directive.js       --> custom directive that returns the current app version
-      version-directive_test.js  --> version directive tests
-      interpolate-filter.js      --> custom interpolation filter
-      interpolate-filter_test.js --> interpolate filter tests
-  view1/                --> the view1 view template and logic
-    view1.html            --> the partial template
-    view1.js              --> the controller logic
-    view1_test.js         --> tests of the controller
-  view2/                --> the view2 view template and logic
-    view2.html            --> the partial template
-    view2.js              --> the controller logic
-    view2_test.js         --> tests of the controller
-  app.js                --> main application module
-  index.html            --> app layout file (the main html template file of the app)
-  index-async.html      --> just like index.html, but loads js files asynchronously
-karma.conf.js         --> config file for running unit tests with Karma
-e2e-tests/            --> end-to-end tests
-  protractor-conf.js    --> Protractor config file
-  scenarios.js          --> end-to-end scenarios to be run by Protractor
-```
+### Run the application
 
-## Testing
+To start the Python server mentioned above at the default port, run the following command: 
 
-There are two kinds of tests in the angular-seed application: Unit tests and End to End tests.
+	$ python -m SimpleHTTPServer
+	
+If you want to run a different server (e.g. Node), be sure to configure the port (and domain if applicable) appropriately in the CORS section of the Sync Gateway config.
 
-### Running Unit Tests
+Before you test your application in your browser, make sure all of the following are true:
+1. You have your Couchbase Server running
+2. You've started the Sync Gateway
+3. All of the configurations are aligned between the client app, the Sync Gateway config, and the Couchbase Server URL and its data bucket
 
-The angular-seed app comes preconfigured with unit tests. These are written in
-[Jasmine][jasmine], which we run with the [Karma Test Runner][karma]. We provide a Karma
-configuration file to run them.
+Once your server is running, open your browser to [http://localhost:8000](http://localhost:8000).  Two things should happen:
+1. You should see a page with a `<thead>` with some column names, a lack of rows in the `<tbody>`, and a **New Item** button.  
+2. You should see some feedback in the Sync Gateway console reflecting the handling of REST calls.
 
-* the configuration is found at `karma.conf.js`
-* the unit tests are found next to the code they are testing and are named as `..._test.js`.
+Most importantly you shouldn't see any errors in the Sync Gateway.  You might see some 404s in the browser console, and a message from PouchDB saying it's totally normal.
 
-The easiest way to run the unit tests is to use the supplied npm script:
+### Test the features
 
-```
-npm test
-```
+Add a new record to the database by clicking the **New Item** button, filling out the form, and clicking **Save**.  That should save your input to the local database, which should sync with Couchbase Server data bucket via the Sync Gateway.  
 
-This script will start the Karma test runner to execute the unit tests. Moreover, Karma will sit and
-watch the source and test files for changes and then re-run the tests whenever any of them change.
-This is the recommended strategy; if your unit tests are being run every time you save a file then
-you receive instant feedback on any changes that break the expected code functionality.
+To confirm, first make sure your record was saved locally in the browser.  You should have been redirected to the list view, which should show your record as the first entry in the table.  Next, open your [Couchbase Server](http://localhost:8091/index.html) console, and open the **Documents** view of the appropriate data bucket, which should be **restful-sample** if you went with my (or really Nic Raboy's) example.  You should see your new record in the database.
 
-You can also ask Karma to do a single run of the tests and then exit.  This is useful if you want to
-check that a particular version of the code is operating as expected.  The project contains a
-predefined script to do this:
+Now open up the application in a new browser, while keeping the original still open.  You should see your data record in the table when you load up the list view.  
 
-```
-npm run test-single-run
-```
+Let's get even crazier.  In your new browser, click **New Item**, and fill out the form to add a new item.  Click **Save**, and as you do, watch the list view in your original browser window.  It should automatically add a new data record.
 
-
-### End to end testing
-
-The angular-seed app comes with end-to-end tests, again written in [Jasmine][jasmine]. These tests
-are run with the [Protractor][protractor] End-to-End test runner.  It uses native events and has
-special features for Angular applications.
-
-* the configuration is found at `e2e-tests/protractor-conf.js`
-* the end-to-end tests are found in `e2e-tests/scenarios.js`
-
-Protractor simulates interaction with our web app and verifies that the application responds
-correctly. Therefore, our web server needs to be serving up the application, so that Protractor
-can interact with it.
-
-```
-npm start
-```
-
-In addition, since Protractor is built upon WebDriver we need to install this.  The angular-seed
-project comes with a predefined script to do this:
-
-```
-npm run update-webdriver
-```
-
-This will download and install the latest version of the stand-alone WebDriver tool.
-
-Once you have ensured that the development web server hosting our application is up and running
-and WebDriver is updated, you can run the end-to-end tests using the supplied npm script:
-
-```
-npm run protractor
-```
-
-This script will execute the end-to-end tests against the application being hosted on the
-development server.
-
-
-## Updating Angular
-
-Previously we recommended that you merge in changes to angular-seed into your own fork of the project.
-Now that the angular framework library code and tools are acquired through package managers (npm and
-bower) you can use these tools instead to update the dependencies.
-
-You can update the tool dependencies by running:
-
-```
-npm update
-```
-
-This will find the latest versions that match the version ranges specified in the `package.json` file.
-
-You can update the Angular dependencies by running:
-
-```
-bower update
-```
-
-This will find the latest versions that match the version ranges specified in the `bower.json` file.
-
-
-## Loading Angular Asynchronously
-
-The angular-seed project supports loading the framework and application scripts asynchronously.  The
-special `index-async.html` is designed to support this style of loading.  For it to work you must
-inject a piece of Angular JavaScript into the HTML page.  The project has a predefined script to help
-do this.
-
-```
-npm run update-index-async
-```
-
-This will copy the contents of the `angular-loader.js` library file into the `index-async.html` page.
-You can run this every time you update the version of Angular that you are using.
-
-
-## Serving the Application Files
-
-While angular is client-side-only technology and it's possible to create angular webapps that
-don't require a backend server at all, we recommend serving the project files using a local
-webserver during development to avoid issues with security restrictions (sandbox) in browsers. The
-sandbox implementation varies between browsers, but quite often prevents things like cookies, xhr,
-etc to function properly when an html page is opened via `file://` scheme instead of `http://`.
-
-
-### Running the App during Development
-
-The angular-seed project comes preconfigured with a local development webserver.  It is a node.js
-tool called [http-server][http-server].  You can start this webserver with `npm start` but you may choose to
-install the tool globally:
-
-```
-sudo npm install -g http-server
-```
-
-Then you can start your own development web server to serve static files from a folder by
-running:
-
-```
-http-server -a localhost -p 8000
-```
-
-Alternatively, you can choose to configure your own webserver, such as apache or nginx. Just
-configure your server to serve the files under the `app/` directory.
-
-
-### Running the App in Production
-
-This really depends on how complex your app is and the overall infrastructure of your system, but
-the general rule is that all you need in production are all the files under the `app/` directory.
-Everything else should be omitted.
-
-Angular apps are really just a bunch of static html, css and js files that just need to be hosted
-somewhere they can be accessed by browsers.
-
-If your Angular app is talking to the backend server via xhr or other means, you need to figure
-out what is the best way to host the static files to comply with the same origin policy if
-applicable. Usually this is done by hosting the files by the backend server or through
-reverse-proxying the backend server(s) and webserver(s).
-
-
-## Continuous Integration
-
-### Travis CI
-
-[Travis CI][travis] is a continuous integration service, which can monitor GitHub for new commits
-to your repository and execute scripts such as building the app or running tests. The angular-seed
-project contains a Travis configuration file, `.travis.yml`, which will cause Travis to run your
-tests when you push to GitHub.
-
-You will need to enable the integration between Travis and GitHub. See the Travis website for more
-instruction on how to do this.
-
-### CloudBees
-
-CloudBees have provided a CI/deployment setup:
-
-<a href="https://grandcentral.cloudbees.com/?CB_clickstart=https://raw.github.com/CloudBees-community/angular-js-clickstart/master/clickstart.json">
-<img src="https://d3ko533tu1ozfq.cloudfront.net/clickstart/deployInstantly.png"/></a>
-
-If you run this, you will get a cloned version of this repo to start working on in a private git repo,
-along with a CI service (in Jenkins) hosted that will run unit and end to end tests in both Firefox and Chrome.
-
-
-## Contact
-
-For more information on AngularJS please check out http://angularjs.org/
-
-[git]: http://git-scm.com/
-[bower]: http://bower.io
-[npm]: https://www.npmjs.org/
-[node]: http://nodejs.org
-[protractor]: https://github.com/angular/protractor
-[jasmine]: http://jasmine.github.io
-[karma]: http://karma-runner.github.io
-[travis]: https://travis-ci.org/
-[http-server]: https://github.com/nodeapps/http-server
+Each browser has its own local database (probably IndexedDB or WebSQL) that's being populated by PouchDB through user input and syncing with Couchbase Server via the Sync Gateway. To see it in action, open your browser's inspector to the **Resources** tab, and see which data stores are being used.  Open them up to see your database - the one declared in the `module.run()` as `pouchDbSrvc.setDatabase('colin-test');` - in action.
