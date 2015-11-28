@@ -6,8 +6,8 @@
     "Attach+"
   ],
   "databases": {
-    "default": {
-      "server": "walrus:data",
+    "restful-sample": {
+      "server": "http://localhost:8091",
       "sync": "function (doc) {channel (doc.channels);}",
       "users": {
         "GUEST": {

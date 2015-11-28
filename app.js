@@ -4,7 +4,7 @@ angular.module('pouchapp', ['ui.router'])
 
     .run(function(pouchDbSrvc) {
 		pouchDbSrvc.setDatabase('colin-test');
-		pouchDbSrvc.sync('http://localhost:4984/default');
+		pouchDbSrvc.sync('http://localhost:4984/restful-sample');
     })
 
     .config(function($stateProvider, $urlRouterProvider) {
